@@ -1,0 +1,33 @@
+{
+  "name": "@varosity/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Varosity AI — stdio transport, proxies to varosity.ai/api/mcp",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "varosity-mcp": "bin/varosity-mcp.mjs"
+  },
+  "files": [
+    "bin/**",
+    "dist/**",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --watch src/index.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "varosity",
+    "mcp",
+    "ai",
+    "video",
+    "voice",
+    "music"
+  ]
+}
