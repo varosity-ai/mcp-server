@@ -96,7 +96,7 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "Nothing is sold inside ChatGPT and the plugin never links to checkout. Generation spends a prepaid balance the user adds on varosity.ai, or the user's own provider keys. When the balance is too low the tool returns an explanatory error."
+        "commerce_description": "Nothing is sold inside ChatGPT and the plugin never links to checkout. Generation spends a prepaid balance the user adds on varosity.ai, or the user's own provider keys. When the balance is too low the tool returns an error that says so and names the page in the user's Varosity account where credits are added."
       },
       "publication": {
         "release_notes": "First release."

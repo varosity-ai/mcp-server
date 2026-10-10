@@ -67,14 +67,29 @@ function respondError(
   write({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 }
 
+/** An error that already carries the JSON-RPC code to report. */
+class RpcError extends Error {
+  constructor(
+    readonly code: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Video renders are polled, so no single call should take minutes. */
+const UPSTREAM_TIMEOUT_MS = 120_000;
+
 async function proxyToHttp(method: string, params: unknown): Promise<unknown> {
   if (!API_KEY) {
-    throw new Error(
+    throw new RpcError(
+      -32001,
       "VAROSITY_API_KEY is not set — add it to the MCP host config's env block.",
     );
   }
   const res = await fetch(`${BASE}/api/mcp`, {
     method: "POST",
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
@@ -86,9 +101,24 @@ async function proxyToHttp(method: string, params: unknown): Promise<unknown> {
       params,
     }),
   });
-  const body = (await res.json().catch(() => ({}))) as JsonRpcResponse;
-  if (body.error) {
-    throw new Error(body.error.message);
+  // The upstream normally answers with a JSON-RPC envelope, but a gateway
+  // error (HTML 502) or the rate limiter (`{ error: "…" }`) does not. Always
+  // turn those into a real error: a reply with neither result nor error is
+  // invalid JSON-RPC and strict hosts drop the connection.
+  const body = (await res.json().catch(() => null)) as
+    | { result?: unknown; error?: unknown }
+    | null;
+  const err = body?.error;
+  if (err && typeof err === "object") {
+    const e = err as { code?: unknown; message?: unknown };
+    throw new RpcError(
+      typeof e.code === "number" ? e.code : -32000,
+      typeof e.message === "string" && e.message ? e.message : `Varosity returned HTTP ${res.status}`,
+    );
+  }
+  if (typeof err === "string" && err) throw new RpcError(-32000, err);
+  if (!res.ok || !body || body.result === undefined) {
+    throw new RpcError(-32000, `Varosity returned HTTP ${res.status} with no usable body`);
   }
   return body.result;
 }
@@ -99,7 +129,9 @@ async function proxyToHttp(method: string, params: unknown): Promise<unknown> {
  * calling a tool still needs VAROSITY_API_KEY.
  */
 async function publicToolList(): Promise<unknown> {
-  const res = await fetch(`${BASE}/.well-known/mcp/server-card.json`);
+  const res = await fetch(`${BASE}/.well-known/mcp/server-card.json`, {
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
   if (!res.ok) throw new Error(`Could not load the Varosity tool list (HTTP ${res.status})`);
   const card = (await res.json()) as { tools?: unknown[] };
   return { tools: card.tools ?? [] };
@@ -147,22 +179,13 @@ async function handle(req: JsonRpcRequest): Promise<void> {
       // JSON-RPC -32601 if it doesn't know the method, which we surface
       // as-is.
       default:
-        try {
-          const result = await proxyToHttp(req.method, req.params);
-          respond(req.id, result);
-        } catch (err) {
-          respondError(
-            req.id,
-            -32601,
-            err instanceof Error ? err.message : `Method not found: ${req.method}`,
-          );
-        }
+        respond(req.id, await proxyToHttp(req.method, req.params));
         return;
     }
   } catch (err) {
     respondError(
       req.id,
-      -32000,
+      err instanceof RpcError ? err.code : -32000,
       err instanceof Error ? err.message : "Unknown error",
     );
   }
@@ -181,7 +204,17 @@ rl.on("line", (line) => {
     respondError(null, -32700, "Parse error");
     return;
   }
-  const task = handle(req).finally(() => pending.delete(task));
+  // Anything that is not a request object with a method (null, a stray
+  // response, a batch) is refused here rather than crashing in handle().
+  const shaped = req as { id?: unknown; method?: unknown } | null;
+  if (!shaped || typeof shaped !== "object" || typeof shaped.method !== "string") {
+    const id = shaped && typeof shaped === "object" ? shaped.id : undefined;
+    if (typeof id === "string" || typeof id === "number") respondError(id, -32600, "Invalid Request");
+    return;
+  }
+  const task = handle(req)
+    .catch(() => {})
+    .finally(() => pending.delete(task));
   pending.add(task);
 });
 
@@ -190,5 +223,7 @@ rl.on("line", (line) => {
 // request still waiting on the network (e.g. a scanner that pipes
 // initialize + tools/list and closes stdin).
 rl.on("close", () => {
+  // Never outlive the host by more than a few seconds over a stalled request.
+  setTimeout(() => process.exit(0), 10_000).unref();
   void Promise.allSettled([...pending]).then(() => process.exit(0));
 });
