@@ -77,8 +77,8 @@ class RpcError extends Error {
   }
 }
 
-/** Video renders are polled, so no single call should take minutes. */
-const UPSTREAM_TIMEOUT_MS = 120_000;
+/** Matches the server's own limit, so the proxy never gives up on a call the server is still running (and billing). */
+const UPSTREAM_TIMEOUT_MS = 300_000;
 
 async function proxyToHttp(method: string, params: unknown): Promise<unknown> {
   if (!API_KEY) {
@@ -206,6 +206,10 @@ rl.on("line", (line) => {
   }
   // Anything that is not a request object with a method (null, a stray
   // response, a batch) is refused here rather than crashing in handle().
+  if (Array.isArray(req)) {
+    respondError(null, -32600, "Batch requests are not supported");
+    return;
+  }
   const shaped = req as { id?: unknown; method?: unknown } | null;
   if (!shaped || typeof shaped !== "object" || typeof shaped.method !== "string") {
     const id = shaped && typeof shaped === "object" ? shaped.id : undefined;
