@@ -30,6 +30,9 @@ import { createInterface } from "node:readline";
 
 const BASE = process.env.VAROSITY_API_BASE ?? "https://varosity.ai";
 const API_KEY = process.env.VAROSITY_API_KEY;
+/** Keep in sync with package.json — reported to the host in `initialize`. */
+const VERSION = "0.1.2";
+const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 type JsonRpcRequest = {
   jsonrpc: "2.0";
@@ -90,25 +93,50 @@ async function proxyToHttp(method: string, params: unknown): Promise<unknown> {
   return body.result;
 }
 
+/**
+ * The tool catalog without credentials, from the public server card. Lets a
+ * host (or a directory scanner) list the tools before a key is configured;
+ * calling a tool still needs VAROSITY_API_KEY.
+ */
+async function publicToolList(): Promise<unknown> {
+  const res = await fetch(`${BASE}/.well-known/mcp/server-card.json`);
+  if (!res.ok) throw new Error(`Could not load the Varosity tool list (HTTP ${res.status})`);
+  const card = (await res.json()) as { tools?: unknown[] };
+  return { tools: card.tools ?? [] };
+}
+
 async function handle(req: JsonRpcRequest): Promise<void> {
+  // Notifications (no id — e.g. notifications/initialized) must never get a
+  // response; replying breaks strict JSON-RPC clients.
+  if (req.id === undefined || req.method.startsWith("notifications/")) return;
+
   try {
     switch (req.method) {
-      case "initialize":
+      case "initialize": {
+        const requested = (req.params as { protocolVersion?: unknown } | undefined)?.protocolVersion;
         respond(req.id, {
-          protocolVersion: "2024-11-05",
+          protocolVersion:
+            typeof requested === "string" && PROTOCOL_VERSIONS.includes(requested)
+              ? requested
+              : PROTOCOL_VERSIONS[0],
           capabilities: { tools: {} },
           serverInfo: {
             name: "Varosity AI (stdio proxy)",
-            version: "0.1.0",
+            version: VERSION,
           },
         });
         return;
+      }
 
       case "ping":
         respond(req.id, { ok: true });
         return;
 
-      case "tools/list":
+      case "tools/list": {
+        respond(req.id, API_KEY ? await proxyToHttp(req.method, req.params) : await publicToolList());
+        return;
+      }
+
       case "tools/call": {
         const result = await proxyToHttp(req.method, req.params);
         respond(req.id, result);
@@ -141,6 +169,7 @@ async function handle(req: JsonRpcRequest): Promise<void> {
 }
 
 // Main stdio loop. One JSON-RPC message per line.
+const pending = new Set<Promise<void>>();
 const rl = createInterface({ input: process.stdin });
 rl.on("line", (line) => {
   const trimmed = line.trim();
@@ -152,8 +181,14 @@ rl.on("line", (line) => {
     respondError(null, -32700, "Parse error");
     return;
   }
-  void handle(req);
+  const task = handle(req).finally(() => pending.delete(task));
+  pending.add(task);
 });
 
-// Exit cleanly when stdin closes (MCP host shutdown).
-rl.on("close", () => process.exit(0));
+// Exit when stdin closes (MCP host shutdown) — but only after in-flight
+// requests have answered. Exiting immediately dropped the reply to any
+// request still waiting on the network (e.g. a scanner that pipes
+// initialize + tools/list and closes stdin).
+rl.on("close", () => {
+  void Promise.allSettled([...pending]).then(() => process.exit(0));
+});
