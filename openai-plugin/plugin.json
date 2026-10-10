@@ -44,7 +44,7 @@
         ],
         "brandColor": "#B36BFF",
         "brandColorDark": "#4FD8FF",
-        "logo": "./assets/icon-512.png"
+        "logo": "./assets/icon.svg"
       },
       "review": {
         "test_cases": {
