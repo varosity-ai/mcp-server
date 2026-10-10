@@ -1,0 +1,20 @@
+{
+  "name": "varosity",
+  "version": "0.1.2",
+  "description": "Generate video, images, voice and music with 60+ AI models from one Varosity account.",
+  "mcpServers": {
+    "varosity": {
+      "httpUrl": "https://varosity.ai/api/mcp",
+      "headers": { "Authorization": "Bearer ${VAROSITY_API_KEY}" }
+    }
+  },
+  "settings": [
+    {
+      "name": "Varosity API key",
+      "description": "vsk_... key from https://varosity.ai/app/keys/api-keys",
+      "envVar": "VAROSITY_API_KEY",
+      "sensitive": true
+    }
+  ],
+  "contextFileName": "GEMINI.md"
+}

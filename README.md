@@ -79,3 +79,17 @@ pnpm build
 npm publish --access public
 ```
 
+## Plugins
+
+This repo is also an installable plugin. It ships one remote MCP server and nothing else: no hooks, no local executables, no telemetry. The only network endpoint is `https://varosity.ai/api/mcp`.
+
+| Host | Manifest | Sign-in |
+|---|---|---|
+| Cursor | `.cursor-plugin/plugin.json` + `mcp.json` | `VAROSITY_API_KEY` |
+| Claude Code, Grok Build | `.claude-plugin/plugin.json` + `.mcp.json` | OAuth on first use |
+| Gemini CLI | `gemini-extension.json` | `VAROSITY_API_KEY` |
+| Docker | `Dockerfile` (stdio) | `VAROSITY_API_KEY` |
+
+Generation tools spend your prepaid Varosity credits or your own provider keys. Apps connected through OAuth are capped at $5/day by default; change or disconnect them at [varosity.ai/app/keys/api-keys](https://varosity.ai/app/keys/api-keys).
+
+Support: <https://varosity.ai/support>

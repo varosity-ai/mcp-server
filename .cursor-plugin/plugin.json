@@ -1,0 +1,17 @@
+{
+  "name": "varosity",
+  "description": "Generate video, images, voice and music with 60+ AI models (Veo 3.1, Kling 3.0, Seedance 4.5, FLUX, ElevenLabs) from one Varosity account.",
+  "version": "0.1.2",
+  "author": { "name": "Varosity Inc.", "email": "jon.kludt@varosity.com" },
+  "homepage": "https://varosity.ai",
+  "repository": "https://github.com/varosity-ai/mcp-server",
+  "license": "MIT",
+  "keywords": ["varosity", "video-generation", "image-generation", "text-to-speech", "music", "veo", "kling", "seedance", "elevenlabs"],
+  "logo": "assets/icon.svg",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "VAROSITY_API_KEY": { "type": "string", "description": "vsk_... key from https://varosity.ai/app/keys/api-keys" }
+    }
+  }
+}
