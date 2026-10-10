@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "varosity": {
+      "url": "https://varosity.ai/api/mcp",
+      "headers": { "Authorization": "Bearer ${VAROSITY_API_KEY}" }
+    }
+  }
+}

@@ -1,8 +1,10 @@
 # `@varosity/mcp-server`
 
-Stdio MCP server for [Varosity AI](https://varosity.ai). Exposes every Varosity tool (generate video, voice, music, render, list models, list templates, webhooks, …) to any MCP-aware host — Claude Desktop, Cursor, Cowork, Continue, etc.
+Stdio MCP server for [Varosity AI](https://varosity.ai) — one API key for 60+ video, image, voice, and music models. Exposes every Varosity tool (generate video, images, voice, music, storyboards, render, list models, templates, webhooks, …) to any MCP-aware host — Claude Desktop, Cursor, Cowork, Continue, etc.
 
-Under the hood it proxies every JSON-RPC call to `${VAROSITY_API_BASE}/api/mcp` over HTTPS with your `vsk_live_...` bearer token. Zero runtime deps.
+Copy-paste setup for each agent host: **<https://varosity.ai/connect>**.
+
+Under the hood it proxies every JSON-RPC call to `${VAROSITY_API_BASE}/api/mcp` over HTTPS with your `vsk_...` bearer token. Zero runtime deps.
 
 ## Claude Desktop
 
@@ -15,14 +17,14 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "@varosity/mcp-server"],
       "env": {
-        "VAROSITY_API_KEY": "vsk_live_..."
+        "VAROSITY_API_KEY": "vsk_..."
       }
     }
   }
 }
 ```
 
-Issue a `vsk_live_...` token at [varosity.ai/app/keys/api-keys](https://varosity.ai/app/keys/api-keys). Restart Claude Desktop.
+Issue a `vsk_...` token at [varosity.ai/app/keys/api-keys](https://varosity.ai/app/keys/api-keys). Restart Claude Desktop.
 
 ## Cursor / Cowork / Continue
 
@@ -30,14 +32,20 @@ Any MCP host that supports the `command + args + env` shape works. Point it at `
 
 ## Tools exposed
 
-Full list via `tools/list`. Current surface:
+40+ tools. This package is a pure proxy, so the live list (with input schemas) always comes from `tools/list`. Current surface:
 
-- `list_models`, `list_voices`, `list_templates`
-- `list_projects`, `create_project`, `get_project`, `create_project_from_template`
-- `generate_video`, `generate_voice`, `generate_music`
-- `suggest_model` (Smart Router)
-- `get_job`, `render_project`
-- `list_webhooks`, `create_webhook`, `test_webhook`, `delete_webhook`
+- **Discover** — `list_models`, `list_voices`, `suggest_model` (Smart Route), `refresh_skills`
+- **Video** — `generate_video`, `get_job`, `pick_reference_images`, `render_shot`, `render_project`
+- **Images** — `generate_image`
+- **Voice & audio** — `generate_voice`, `clone_voice`, `design_voice`, `voice_changer`, `sound_effect`, `transcribe_audio`, `clip_audio`
+- **Music** — `generate_music`
+- **Projects & templates** — `list_projects`, `get_project`, `create_project`, `delete_project`, `list_templates`, `create_project_from_template`
+- **Storyboards** — `plan_storyboard`, `suggest_storyboard_mode`, `generate_storyboard_grid`, `generate_storyboard_keyframes`, `regenerate_keyframe`, `generate_storyboard_audio`, `render_storyboard`
+- **Brand agents** — `list_brand_agents`, `run_brand_agent`, `plan_brand_run`, `generate_creative_bible`, `generate_end_card`, `gate_decide`
+- **Webhooks** — `list_webhooks`, `create_webhook`, `test_webhook`, `delete_webhook`
+- **Provenance** — `verify_asset`, `govern_asset`
+
+`generate_video` returns a `jobId`; poll `get_job` until `status` is `succeeded`, then read `outputUrl`.
 
 ## Alternative: direct HTTP
 
@@ -50,7 +58,7 @@ If your MCP host supports the Streamable HTTP transport, you can skip this packa
       "url": "https://varosity.ai/api/mcp",
       "transport": "streamable-http",
       "headers": {
-        "Authorization": "Bearer vsk_live_..."
+        "Authorization": "Bearer vsk_..."
       }
     }
   }
@@ -70,3 +78,18 @@ cd packages/mcp-server
 pnpm build
 npm publish --access public
 ```
+
+## Plugins
+
+This repo is also an installable plugin. It ships one remote MCP server and nothing else: no hooks, no local executables, no telemetry. The only network endpoint is `https://varosity.ai/api/mcp`.
+
+| Host | Manifest | Sign-in |
+|---|---|---|
+| Cursor | `.cursor-plugin/plugin.json` + `mcp.json` | `VAROSITY_API_KEY` |
+| Claude Code, Grok Build | `.claude-plugin/plugin.json` + `.mcp.json` | OAuth on first use |
+| Gemini CLI | `gemini-extension.json` | `VAROSITY_API_KEY` |
+| Docker | `Dockerfile` (stdio) | `VAROSITY_API_KEY` |
+
+Generation tools spend your prepaid Varosity credits or your own provider keys. Apps connected through OAuth are capped at $5/day by default; change or disconnect them at [varosity.ai/app/keys/api-keys](https://varosity.ai/app/keys/api-keys).
+
+Support: <https://varosity.ai/support>

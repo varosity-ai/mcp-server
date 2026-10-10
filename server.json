@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.jonkludt/varosity",
+  "description": "One key for AI video, voice, music, and image across 40+ frontier models. BYOK zero markup.",
+  "repository": {
+    "url": "https://github.com/varosity-ai/mcp-server",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "websiteUrl": "https://varosity.ai",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@varosity/mcp-server",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Varosity API key (vsk_...) issued at https://varosity.ai/app/keys/api-keys",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "VAROSITY_API_KEY"
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://varosity.ai/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer vsk_... \u2014 Varosity API key issued at https://varosity.ai/app/keys/api-keys",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
