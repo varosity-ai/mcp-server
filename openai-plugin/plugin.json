@@ -1,0 +1,106 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "varosity",
+  "version": "1.0.0",
+  "description": "Generate video, images, voiceovers and music with 60+ AI models from one Varosity account.",
+  "author": {
+    "name": "Varosity Inc.",
+    "url": "https://varosity.ai"
+  },
+  "homepage": "https://varosity.ai",
+  "repository": "https://github.com/varosity-ai/mcp-server",
+  "license": "MIT",
+  "keywords": [
+    "varosity",
+    "video",
+    "image",
+    "voice",
+    "music"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Varosity",
+        "shortDescription": "AI video, image, voice, music",
+        "longDescription": "Varosity lets you create video, images, voiceovers and music inside ChatGPT with models from many providers through your Varosity account. Video models include Veo 3.1, Kling 3.0, Seedance 4.5, Runway, Luma, Pika, Hailuo and Wan. Image models include Nano Banana Pro, GPT Image 2, FLUX and Ideogram. Voice and music models include ElevenLabs, Cartesia, Lyria and Suno.\n\nAsk which model suits a shot, start a render, and get the finished link when the job completes. Generate an image, a voiceover, a sound effect or a music track. List and manage your Varosity projects, render the shots in a project and stitch them into one MP4. Check whether a file carries C2PA content credentials.\n\nYou sign in with your Varosity account and approve what ChatGPT may do. Each connected app has a daily spend limit that you control, and you can disconnect it at any time from your Varosity API keys page. Requires a Varosity account. Varosity is for users aged 18 and over.",
+        "developerName": "Varosity Inc.",
+        "category": "Creativity",
+        "capabilities": [
+          "Compare models and prices",
+          "Generate video",
+          "Generate images",
+          "Generate voiceovers",
+          "Generate music and sound effects",
+          "Manage and render projects"
+        ],
+        "websiteURL": "https://varosity.ai",
+        "supportURL": "https://varosity.ai/support",
+        "privacyPolicyURL": "https://varosity.ai/legal/privacy",
+        "termsOfServiceURL": "https://varosity.ai/legal/terms",
+        "defaultPrompt": [
+          "Compare video models for a 10-second product shot with camera motion.",
+          "Generate a 5-second clip of a neon city street in the rain.",
+          "Voice this line warmly, then add a 20-second upbeat music track."
+        ],
+        "brandColor": "#B36BFF",
+        "brandColorDark": "#4FD8FF",
+        "logo": "./assets/icon-512.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Model comparison",
+              "prompt": "Use Varosity to compare video models for a 10-second product shot with camera motion.",
+              "tools_triggered": "suggest_model, list_models",
+              "expected_behavior": "Returns a ranked list of video models with reasons and per-second prices. Nothing is generated and nothing is charged."
+            },
+            {
+              "description": "Image generation",
+              "prompt": "Use Varosity to make a 16:9 image of a sunrise over a desert highway with the headline 'Road Trip Season'.",
+              "tools_triggered": "generate_image",
+              "expected_behavior": "Returns one image URL within seconds. ChatGPT shows the image and its link."
+            },
+            {
+              "description": "Video generation with status polling",
+              "prompt": "Use Varosity to generate a 5-second 16:9 clip of a neon city street in the rain, then give me the link.",
+              "tools_triggered": "generate_video, get_job",
+              "expected_behavior": "Returns a job id. Status moves from running to succeeded and an MP4 URL is returned, usually within 3 minutes."
+            },
+            {
+              "description": "Voiceover",
+              "prompt": "Use Varosity to voice this line in a warm voice: 'Fresh coffee, five minutes from your door.'",
+              "tools_triggered": "list_voices, generate_voice",
+              "expected_behavior": "Returns an audio URL of the line spoken in the chosen voice."
+            },
+            {
+              "description": "Projects",
+              "prompt": "Use Varosity to list my projects and show the shots in the newest one.",
+              "tools_triggered": "list_projects, get_project",
+              "expected_behavior": "Returns the test account's seeded 'Reviewer demo' project and its shots with render URLs."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unrelated factual question",
+              "prompt": "What's the capital of Australia?"
+            },
+            {
+              "description": "Text-only writing task",
+              "prompt": "Write a two-paragraph product description for a matte black water bottle."
+            },
+            {
+              "description": "Editing the user's own code",
+              "prompt": "Fix the off-by-one error in this Python loop."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "Nothing is sold inside ChatGPT and the plugin never links to checkout. Generation spends a prepaid balance the user adds on varosity.ai, or the user's own provider keys. When the balance is too low the tool returns an explanatory error."
+      },
+      "publication": {
+        "release_notes": "First release."
+      }
+    }
+  }
+}
